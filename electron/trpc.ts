@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { getDatabase } from './database';
 import { sql } from 'kysely';
 import { DateTime } from 'luxon';
+import { nbuService } from './services/nbuService';
 
 // Створення контексту tRPC
 const createContext = () => ({
@@ -492,6 +493,22 @@ const appRouter = router({
           taxes,
           totalTax: taxes.reduce((sum, tax) => sum + tax.amount, 0),
         };
+      }),
+  }),
+
+  // Сервіси
+  services: router({
+    getNBUExchangeRate: publicProcedure
+      .input(
+        z.object({
+          currency: z.string(),
+          date: z.string(),
+        })
+      )
+      .query(async ({ input }) => {
+        const { currency, date } = input;
+        const rate = await nbuService.getCurrencyRate(currency, date);
+        return { rate };
       }),
   }),
 });

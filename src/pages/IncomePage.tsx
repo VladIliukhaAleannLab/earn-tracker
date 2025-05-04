@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
 import { trpc } from '../utils/trpc';
 
@@ -15,12 +15,14 @@ const IncomePage: React.FC = () => {
   const { user } = useAuth();
   const [isAddingIncome, setIsAddingIncome] = useState(false);
   const [editingIncomeId, setEditingIncomeId] = useState<number | null>(null);
+  const [isLoadingRate, setIsLoadingRate] = useState(false);
 
   const {
     register,
     handleSubmit,
     reset,
     setValue,
+    control,
     formState: { errors },
   } = useForm<IncomeForm>({
     defaultValues: {
@@ -103,6 +105,49 @@ const IncomePage: React.FC = () => {
     }
   };
 
+  // Спостереження за полями форми
+  const currency = useWatch({ control, name: 'currency' });
+  const date = useWatch({ control, name: 'date' });
+
+  // Мутація для отримання курсу валюти від НБУ
+  const getNBUExchangeRate = trpc.services.getNBUExchangeRate.useQuery(
+    { currency: currency || 'USD', date: date || new Date().toISOString().split('T')[0] },
+    { enabled: false } // Не запускати запит автоматично
+  );
+
+  // Функція для отримання курсу валюти від НБУ
+  const fetchExchangeRate = async () => {
+    // Якщо валюта UAH, встановлюємо курс 1 і виходимо
+    if (currency === 'UAH') {
+      setValue('exchange_rate', 1);
+      return;
+    }
+
+    // Встановлюємо стан завантаження
+    setIsLoadingRate(true);
+
+    try {
+      // Отримуємо курс валюти від НБУ через tRPC
+      const result = await getNBUExchangeRate.refetch();
+
+      // Якщо курс отримано успішно, встановлюємо його у формі
+      if (result.data && result.data.rate !== null) {
+        setValue('exchange_rate', result.data.rate);
+      } else {
+        // Якщо виникла помилка, показуємо повідомлення
+        alert(
+          "Не вдалося отримати курс валюти. Перевірте з'єднання з інтернетом або введіть курс вручну."
+        );
+      }
+    } catch (error) {
+      console.error('Помилка при отриманні курсу валюти:', error);
+      alert('Помилка при отриманні курсу валюти. Спробуйте ще раз або введіть курс вручну.');
+    } finally {
+      // Знімаємо стан завантаження
+      setIsLoadingRate(false);
+    }
+  };
+
   // Функція для скасування редагування
   const handleCancel = () => {
     setIsAddingIncome(false);
@@ -156,7 +201,15 @@ const IncomePage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Валюта</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  {...register('currency', { required: "Це поле обов'язкове" })}
+                  {...register('currency', {
+                    required: "Це поле обов'язкове",
+                    onChange: e => {
+                      // Якщо валюта змінилась на UAH, встановлюємо курс 1
+                      if (e.target.value === 'UAH') {
+                        setValue('exchange_rate', 1);
+                      }
+                    },
+                  })}
                 >
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
@@ -171,15 +224,25 @@ const IncomePage: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Курс обміну (до гривні)
                 </label>
-                <input
-                  type="number"
-                  step="0.0001"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  {...register('exchange_rate', {
-                    required: "Це поле обов'язкове",
-                    min: { value: 0.01, message: 'Курс має бути більше 0' },
-                  })}
-                />
+                <div className="flex">
+                  <input
+                    type="number"
+                    step="0.0001"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-l-md"
+                    {...register('exchange_rate', {
+                      required: "Це поле обов'язкове",
+                      min: { value: 0.01, message: 'Курс має бути більше 0' },
+                    })}
+                  />
+                  <button
+                    type="button"
+                    className={`px-3 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 ${isLoadingRate ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={fetchExchangeRate}
+                    disabled={isLoadingRate}
+                  >
+                    {isLoadingRate ? '...' : 'НБУ'}
+                  </button>
+                </div>
                 {errors.exchange_rate && (
                   <p className="text-red-500 text-sm mt-1">{errors.exchange_rate.message}</p>
                 )}
@@ -190,7 +253,9 @@ const IncomePage: React.FC = () => {
                 <input
                   type="date"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  {...register('date', { required: "Це поле обов'язкове" })}
+                  {...register('date', {
+                    required: "Це поле обов'язкове",
+                  })}
                 />
                 {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
               </div>
