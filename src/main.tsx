@@ -10,13 +10,13 @@ import './styles/index.css';
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-        <QueryClientProvider client={queryClient}>
-            <trpc.Provider client={trpcClient} queryClient={queryClient}>
-                <BrowserRouter>
-                    <App />
-                </BrowserRouter>
-            </trpc.Provider>
-        </QueryClientProvider>
-    </React.StrictMode>
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </trpc.Provider>
+    </QueryClientProvider>
+  </React.StrictMode>
 );

@@ -34,8 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const trpcLogin = trpc.users.login.useMutation({  });
-
+  const trpcLogin = trpc.users.login.useMutation({});
 
   // Функція для входу
   const login = async (username: string, password: string) => {

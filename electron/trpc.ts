@@ -29,14 +29,11 @@ const userSchema = z.object({
 });
 
 const incomeSchema = z.object({
-  amount: z.preprocess(
-    Number,
-    z.number().positive({ message: "Сума має бути більше 0" })
-  ),
+  amount: z.preprocess(Number, z.number().positive({ message: 'Сума має бути більше 0' })),
   currency: z.string(),
   exchange_rate: z.preprocess(
-      Number,
-    z.number().positive({ message: "Курс обміну має бути більше 0" })
+    Number,
+    z.number().positive({ message: 'Курс обміну має бути більше 0' })
   ),
   description: z.string().optional(),
   date: z.string(),
@@ -47,17 +44,14 @@ const taxSettingSchema = z.object({
   name: z.string(),
   type: z.enum(['fixed', 'percentage']),
   value: z.preprocess(
-    (val) => (typeof val === 'string' ? parseFloat(val) : val),
-    z.number().positive({ message: "Значення має бути більше 0" })
+    val => (typeof val === 'string' ? parseFloat(val) : val),
+    z.number().positive({ message: 'Значення має бути більше 0' })
   ),
-  active: z.preprocess(
-    (val) => {
-      if (typeof val === 'boolean') return val ? 1 : 0;
-      if (typeof val === 'string') return val === 'true' || val === '1' ? 1 : 0;
-      return val ? 1 : 0;
-    },
-    z.number().min(0).max(1)
-  ), // Transform various inputs to 0/1 for SQLite
+  active: z.preprocess(val => {
+    if (typeof val === 'boolean') return val ? 1 : 0;
+    if (typeof val === 'string') return val === 'true' || val === '1' ? 1 : 0;
+    return val ? 1 : 0;
+  }, z.number().min(0).max(1)), // Transform various inputs to 0/1 for SQLite
   year: z.number(),
   quarter: z.number().min(1).max(4),
   user_id: z.number(),
@@ -67,14 +61,11 @@ const eventSchema = z.object({
   type: z.enum(['tax_payment', 'report_submission', 'other']),
   description: z.string(),
   date: z.string(),
-  completed: z.preprocess(
-    (val) => {
-      if (typeof val === 'boolean') return val ? 1 : 0;
-      if (typeof val === 'string') return val === 'true' || val === '1' ? 1 : 0;
-      return val ? 1 : 0;
-    },
-    z.number().min(0).max(1)
-  ), // Transform various inputs to 0/1 for SQLite
+  completed: z.preprocess(val => {
+    if (typeof val === 'boolean') return val ? 1 : 0;
+    if (typeof val === 'string') return val === 'true' || val === '1' ? 1 : 0;
+    return val ? 1 : 0;
+  }, z.number().min(0).max(1)), // Transform various inputs to 0/1 for SQLite
   user_id: z.number(),
 });
 
@@ -82,118 +73,108 @@ const eventSchema = z.object({
 const appRouter = router({
   // Користувачі
   users: router({
-    create: publicProcedure
-      .input(userSchema)
-      .mutation(async ({ input, ctx }) => {
-        console.log('Creating user:', input.username);
+    create: publicProcedure.input(userSchema).mutation(async ({ input, ctx }) => {
+      console.log('Creating user:', input.username);
 
-        try {
-          // Перевіряємо, чи існує користувач з таким ім'ям
-          const existingUser = await ctx.db
-            .selectFrom('users')
-            .where('username', '==', input.username)
-            .select(['id'])
-            .executeTakeFirst();
-
-          if (existingUser) {
-            console.log('User already exists:', input.username);
-            throw new Error('User already exists');
-          }
-
-          // Тут буде хешування пароля в реальному додатку
-          const passwordHash = input.password; // Спрощено для прикладу
-
-          // Використовуємо SQL для вставки даних
-          console.log('Inserting user into database...');
-          const result = await ctx.db
-            .insertInto('users')
-            .values({
-              username: input.username,
-              password_hash: passwordHash,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .returning(['id', 'username', 'created_at'])
-            .executeTakeFirst();
-
-          console.log('User created successfully:', result);
-          return result;
-        } catch (error) {
-          console.error('Error creating user:', error);
-          throw error;
-        }
-      }),
-
-    login: publicProcedure
-      .input(userSchema)
-      .mutation(async ({ input, ctx }) => {
-        console.log('Login attempt for user:', input.username);
-
-        try {
-          const user = await ctx.db
-            .selectFrom('users')
-            .where('username', '==', input.username)
-            .select(['id', 'username', 'password_hash'])
-            .executeTakeFirst();
-
-          console.log('User found:', user ? 'yes' : 'no');
-
-          if (!user) {
-            throw new Error('User not found');
-          }
-
-          // Тут буде перевірка хешу пароля в реальному додатку
-          if (user.password_hash !== input.password) {
-            console.log('Invalid password');
-            throw new Error('Invalid password');
-          }
-
-          console.log('Login successful for user:', input.username);
-          return {
-            id: user.id,
-            username: user.username,
-          };
-        } catch (error) {
-          console.error('Login error:', error);
-          throw error;
-        }
-      }),
-
-    getAll: publicProcedure
-      .query(async ({ ctx }) => {
-        return ctx.db
+      try {
+        // Перевіряємо, чи існує користувач з таким ім'ям
+        const existingUser = await ctx.db
           .selectFrom('users')
-          .select(['id', 'username', 'created_at'])
-          .execute();
-      }),
+          .where('username', '==', input.username)
+          .select(['id'])
+          .executeTakeFirst();
+
+        if (existingUser) {
+          console.log('User already exists:', input.username);
+          throw new Error('User already exists');
+        }
+
+        // Тут буде хешування пароля в реальному додатку
+        const passwordHash = input.password; // Спрощено для прикладу
+
+        // Використовуємо SQL для вставки даних
+        console.log('Inserting user into database...');
+        const result = await ctx.db
+          .insertInto('users')
+          .values({
+            username: input.username,
+            password_hash: passwordHash,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .returning(['id', 'username', 'created_at'])
+          .executeTakeFirst();
+
+        console.log('User created successfully:', result);
+        return result;
+      } catch (error) {
+        console.error('Error creating user:', error);
+        throw error;
+      }
+    }),
+
+    login: publicProcedure.input(userSchema).mutation(async ({ input, ctx }) => {
+      console.log('Login attempt for user:', input.username);
+
+      try {
+        const user = await ctx.db
+          .selectFrom('users')
+          .where('username', '==', input.username)
+          .select(['id', 'username', 'password_hash'])
+          .executeTakeFirst();
+
+        console.log('User found:', user ? 'yes' : 'no');
+
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        // Тут буде перевірка хешу пароля в реальному додатку
+        if (user.password_hash !== input.password) {
+          console.log('Invalid password');
+          throw new Error('Invalid password');
+        }
+
+        console.log('Login successful for user:', input.username);
+        return {
+          id: user.id,
+          username: user.username,
+        };
+      } catch (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
+    }),
+
+    getAll: publicProcedure.query(async ({ ctx }) => {
+      return ctx.db.selectFrom('users').select(['id', 'username', 'created_at']).execute();
+    }),
   }),
 
   // Доходи
   incomes: router({
-    create: publicProcedure
-      .input(incomeSchema)
-      .mutation(async ({ input, ctx }) => {
-        // Використовуємо SQL для вставки даних
+    create: publicProcedure.input(incomeSchema).mutation(async ({ input, ctx }) => {
+      // Використовуємо SQL для вставки даних
 
-          console.log("Creating income:", input)
+      console.log('Creating income:', input);
 
-        const result = await ctx.db
-          .insertInto('incomes')
-          .values({
-            user_id: input.user_id,
-            amount: input.amount,
-            currency: input.currency,
-            exchange_rate: input.exchange_rate,
-            description: input.description || null,
-            date: input.date,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .returning(['id', 'amount', 'currency', 'date'])
-          .executeTakeFirst();
+      const result = await ctx.db
+        .insertInto('incomes')
+        .values({
+          user_id: input.user_id,
+          amount: input.amount,
+          currency: input.currency,
+          exchange_rate: input.exchange_rate,
+          description: input.description || null,
+          date: input.date,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .returning(['id', 'amount', 'currency', 'date'])
+        .executeTakeFirst();
 
-        return result;
-      }),
+      return result;
+    }),
 
     getByUser: publicProcedure
       .input(z.object({ user_id: z.number() }))
@@ -206,10 +187,12 @@ const appRouter = router({
       }),
 
     update: publicProcedure
-      .input(z.object({
-        id: z.number(),
-        ...incomeSchema.partial().shape,
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          ...incomeSchema.partial().shape,
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
 
@@ -224,27 +207,24 @@ const appRouter = router({
           .executeTakeFirst();
       }),
 
-    delete: publicProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        return ctx.db
-          .deleteFrom('incomes')
-          .where('id', '==', input.id)
-          .executeTakeFirst();
-      }),
+    delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      return ctx.db.deleteFrom('incomes').where('id', '==', input.id).executeTakeFirst();
+    }),
   }),
 
   // Налаштування податків
   taxSettings: router({
     // Копіювання податкових налаштувань з одного кварталу в інший
     copyFromQuarter: publicProcedure
-      .input(z.object({
-        user_id: z.number(),
-        source_year: z.number(),
-        source_quarter: z.number().min(1).max(4),
-        target_year: z.number(),
-        target_quarter: z.number().min(1).max(4),
-      }))
+      .input(
+        z.object({
+          user_id: z.number(),
+          source_year: z.number(),
+          source_quarter: z.number().min(1).max(4),
+          target_year: z.number(),
+          target_quarter: z.number().min(1).max(4),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         // Отримуємо налаштування з вихідного кварталу
         const sourceTaxSettings = await ctx.db
@@ -274,51 +254,46 @@ const appRouter = router({
             year: input.target_year,
             quarter: input.target_quarter,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
           }));
 
-          await ctx.db
-            .insertInto('tax_settings')
-            .values(newTaxSettings)
-            .execute();
+          await ctx.db.insertInto('tax_settings').values(newTaxSettings).execute();
         }
 
         return { success: true, count: sourceTaxSettings.length };
       }),
 
-    create: publicProcedure
-      .input(taxSettingSchema)
-      .mutation(async ({ input, ctx }) => {
-        // Використовуємо SQL для вставки даних
-        const result = await ctx.db
-          .insertInto('tax_settings')
-          .values({
-            user_id: input.user_id,
-            name: input.name,
-            type: input.type,
-            value: input.value,
-            active: input.active, // Already transformed by Zod schema
-            year: input.year,
-            quarter: input.quarter,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .returning(['id', 'name', 'type', 'value', 'year', 'quarter'])
-          .executeTakeFirst();
+    create: publicProcedure.input(taxSettingSchema).mutation(async ({ input, ctx }) => {
+      // Використовуємо SQL для вставки даних
+      const result = await ctx.db
+        .insertInto('tax_settings')
+        .values({
+          user_id: input.user_id,
+          name: input.name,
+          type: input.type,
+          value: input.value,
+          active: input.active, // Already transformed by Zod schema
+          year: input.year,
+          quarter: input.quarter,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .returning(['id', 'name', 'type', 'value', 'year', 'quarter'])
+        .executeTakeFirst();
 
-        return result;
-      }),
+      return result;
+    }),
 
     getByUser: publicProcedure
-      .input(z.object({
-        user_id: z.number(),
-        year: z.number().optional(),
-        quarter: z.number().min(1).max(4).optional()
-      }))
+      .input(
+        z.object({
+          user_id: z.number(),
+          year: z.number().optional(),
+          quarter: z.number().min(1).max(4).optional(),
+        })
+      )
       .query(async ({ input, ctx }) => {
-        let query = ctx.db
-          .selectFrom('tax_settings')
-          .where('user_id', '==', input.user_id);
+        let query = ctx.db.selectFrom('tax_settings').where('user_id', '==', input.user_id);
 
         if (input.year !== undefined) {
           query = query.where('year', '==', input.year);
@@ -332,10 +307,12 @@ const appRouter = router({
       }),
 
     update: publicProcedure
-      .input(z.object({
-        id: z.number(),
-        ...taxSettingSchema.partial().shape,
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          ...taxSettingSchema.partial().shape,
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
 
@@ -351,38 +328,31 @@ const appRouter = router({
           .executeTakeFirst();
       }),
 
-    delete: publicProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        return ctx.db
-          .deleteFrom('tax_settings')
-          .where('id', '==', input.id)
-          .executeTakeFirst();
-      }),
+    delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      return ctx.db.deleteFrom('tax_settings').where('id', '==', input.id).executeTakeFirst();
+    }),
   }),
 
   // Події
   events: router({
-    create: publicProcedure
-      .input(eventSchema)
-      .mutation(async ({ input, ctx }) => {
-        // Використовуємо SQL для вставки даних
-        const result = await ctx.db
-          .insertInto('events')
-          .values({
-            user_id: input.user_id,
-            type: input.type,
-            description: input.description,
-            date: input.date,
-            completed: input.completed, // Already transformed by Zod schema
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-          .returning(['id', 'type', 'description', 'date'])
-          .executeTakeFirst();
+    create: publicProcedure.input(eventSchema).mutation(async ({ input, ctx }) => {
+      // Використовуємо SQL для вставки даних
+      const result = await ctx.db
+        .insertInto('events')
+        .values({
+          user_id: input.user_id,
+          type: input.type,
+          description: input.description,
+          date: input.date,
+          completed: input.completed, // Already transformed by Zod schema
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .returning(['id', 'type', 'description', 'date'])
+        .executeTakeFirst();
 
-        return result;
-      }),
+      return result;
+    }),
 
     getByUser: publicProcedure
       .input(z.object({ user_id: z.number() }))
@@ -395,10 +365,12 @@ const appRouter = router({
       }),
 
     update: publicProcedure
-      .input(z.object({
-        id: z.number(),
-        ...eventSchema.partial().shape,
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          ...eventSchema.partial().shape,
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
 
@@ -414,45 +386,39 @@ const appRouter = router({
           .executeTakeFirst();
       }),
 
-    delete: publicProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        return ctx.db
-          .deleteFrom('events')
-          .where('id', '==', input.id)
-          .executeTakeFirst();
-      }),
+    delete: publicProcedure.input(z.object({ id: z.number() })).mutation(async ({ input, ctx }) => {
+      return ctx.db.deleteFrom('events').where('id', '==', input.id).executeTakeFirst();
+    }),
   }),
 
   // Аналітика
   analytics: router({
     getIncomeByPeriod: publicProcedure
-      .input(z.object({
-        user_id: z.number(),
-        start_date: z.string(),
-        end_date: z.string(),
-      }))
+      .input(
+        z.object({
+          user_id: z.number(),
+          start_date: z.string(),
+          end_date: z.string(),
+        })
+      )
       .query(async ({ input, ctx }) => {
         return ctx.db
           .selectFrom('incomes')
           .where('user_id', '==', input.user_id)
           .where('date', '>=', input.start_date)
           .where('date', '<=', input.end_date)
-          .select([
-            'date',
-            'amount',
-            'currency',
-            'exchange_rate',
-          ])
+          .select(['date', 'amount', 'currency', 'exchange_rate'])
           .execute();
       }),
 
     calculateTaxes: publicProcedure
-      .input(z.object({
-        user_id: z.number(),
-        start_date: z.string(),
-        end_date: z.string(),
-      }))
+      .input(
+        z.object({
+          user_id: z.number(),
+          start_date: z.string(),
+          end_date: z.string(),
+        })
+      )
       .query(async ({ input, ctx }) => {
         // Отримуємо всі доходи за період
         const incomes = await ctx.db
@@ -460,10 +426,7 @@ const appRouter = router({
           .where('user_id', '==', input.user_id)
           .where('date', '>=', input.start_date)
           .where('date', '<=', input.end_date)
-          .select([
-            'amount',
-            'exchange_rate',
-          ])
+          .select(['amount', 'exchange_rate'])
           .execute();
 
         // Отримуємо активні налаштування податків для вказаного періоду
@@ -474,7 +437,9 @@ const appRouter = router({
         const year = startDate.year;
         const quarter = Math.ceil(startDate.month / 3);
 
-        console.log(`Calculating taxes for year: ${year}, quarter: ${quarter}, start_date: ${input.start_date}, end_date: ${input.end_date}`);
+        console.log(
+          `Calculating taxes for year: ${year}, quarter: ${quarter}, start_date: ${input.start_date}, end_date: ${input.end_date}`
+        );
 
         // Отримуємо всі активні податки для користувача
         const allTaxSettings = await ctx.db
@@ -490,7 +455,10 @@ const appRouter = router({
         let taxSettings = allTaxSettings;
 
         // Перевіряємо, чи є в податках поля year і quarter
-        const hasYearQuarter = allTaxSettings.length > 0 && 'year' in allTaxSettings[0] && 'quarter' in allTaxSettings[0];
+        const hasYearQuarter =
+          allTaxSettings.length > 0 &&
+          'year' in allTaxSettings[0] &&
+          'quarter' in allTaxSettings[0];
 
         if (hasYearQuarter) {
           console.log('Filtering tax settings by year and quarter');

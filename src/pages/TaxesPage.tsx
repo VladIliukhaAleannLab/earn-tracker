@@ -18,7 +18,13 @@ const TaxesPage: React.FC = () => {
   const [isAddingTax, setIsAddingTax] = useState(false);
   const [editingTaxId, setEditingTaxId] = useState<number | null>(null);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<TaxSettingForm>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<TaxSettingForm>({
     defaultValues: {
       type: 'percentage',
       active: true,
@@ -31,26 +37,32 @@ const TaxesPage: React.FC = () => {
   const [quarter, setQuarter] = useState<number>(Math.floor(currentDate.getMonth() / 3) + 1);
 
   // Отримання податкових налаштувань користувача для вибраного кварталу
-  const { data: taxSettings, isLoading, refetch, error } = trpc.taxSettings.getByUser.useQuery(
+  const {
+    data: taxSettings,
+    isLoading,
+    refetch,
+    error,
+  } = trpc.taxSettings.getByUser.useQuery(
     { user_id: user?.id || 0, year, quarter },
     {
       enabled: !!user,
       // Якщо виникла помилка з колонками year/quarter, спробуємо запит без них
       retry: false,
-      onError: (err) => {
+      onError: err => {
         console.error('Error fetching tax settings:', err);
-      }
+      },
     }
   );
 
   // Запасний запит без фільтрів по року і кварталу, якщо перший запит не вдався
-  const { data: fallbackTaxSettings, isLoading: isFallbackLoading } = trpc.taxSettings.getByUser.useQuery(
-    { user_id: user?.id || 0 },
-    {
-      enabled: !!user && !!error,
-      retry: false
-    }
-  );
+  const { data: fallbackTaxSettings, isLoading: isFallbackLoading } =
+    trpc.taxSettings.getByUser.useQuery(
+      { user_id: user?.id || 0 },
+      {
+        enabled: !!user && !!error,
+        retry: false,
+      }
+    );
 
   // Використовуємо запасні дані, якщо основний запит не вдався
   const effectiveTaxSettings = error ? fallbackTaxSettings : taxSettings;
@@ -138,8 +150,6 @@ const TaxesPage: React.FC = () => {
     reset();
   };
 
-
-
   // Розрахунок початку і кінця вибраного кварталу з використанням Luxon
   const { startOfQuarter, endOfQuarter } = useMemo(() => {
     // Створюємо об'єкт DateTime для першого дня кварталу
@@ -155,7 +165,7 @@ const TaxesPage: React.FC = () => {
 
     return {
       startOfQuarter: start.toJSDate(),
-      endOfQuarter: end.toJSDate()
+      endOfQuarter: end.toJSDate(),
     };
   }, [year, quarter]);
 
@@ -180,10 +190,12 @@ const TaxesPage: React.FC = () => {
     {
       enabled: !!user,
       // Додаємо логування для відстеження дат
-      onSuccess: (data) => {
-        console.log(`Got tax data for period: ${DateTime.fromJSDate(startOfQuarter).toISODate()} to ${DateTime.fromJSDate(endOfQuarter).toISODate()}`);
+      onSuccess: data => {
+        console.log(
+          `Got tax data for period: ${DateTime.fromJSDate(startOfQuarter).toISODate()} to ${DateTime.fromJSDate(endOfQuarter).toISODate()}`
+        );
         console.log('Tax data:', data);
-      }
+      },
     }
   );
 
@@ -214,24 +226,22 @@ const TaxesPage: React.FC = () => {
 
           <div className="flex space-x-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Рік
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Рік</label>
               <select
                 value={year}
                 onChange={handleYearChange}
                 className="px-3 py-2 border border-gray-300 rounded-md"
               >
                 {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                  <option key={y} value={y}>{y}</option>
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Квартал
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Квартал</label>
               <select
                 value={quarter}
                 onChange={handleQuarterChange}
@@ -302,51 +312,39 @@ const TaxesPage: React.FC = () => {
           </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Назва податку
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Назва податку</label>
               <input
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                {...register('name', { required: 'Це поле обов\'язкове' })}
+                {...register('name', { required: "Це поле обов'язкове" })}
               />
-              {errors.name && (
-                <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-              )}
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Тип податку
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Тип податку</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                {...register('type', { required: 'Це поле обов\'язкове' })}
+                {...register('type', { required: "Це поле обов'язкове" })}
               >
                 <option value="percentage">Відсотковий</option>
                 <option value="fixed">Фіксований</option>
               </select>
-              {errors.type && (
-                <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
-              )}
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Значення
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Значення</label>
               <input
                 type="number"
                 step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 {...register('value', {
-                  required: 'Це поле обов\'язкове',
-                  min: { value: 0, message: 'Значення має бути більше або дорівнювати 0' }
+                  required: "Це поле обов'язкове",
+                  min: { value: 0, message: 'Значення має бути більше або дорівнювати 0' },
                 })}
               />
-              {errors.value && (
-                <p className="text-red-500 text-sm mt-1">{errors.value.message}</p>
-              )}
+              {errors.value && <p className="text-red-500 text-sm mt-1">{errors.value.message}</p>}
             </div>
 
             <div className="flex items-center">
@@ -383,16 +381,22 @@ const TaxesPage: React.FC = () => {
       {/* Таблиця податкових налаштувань */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="flex justify-between items-center p-6 border-b">
-          <h2 className="text-xl font-semibold">Налаштування податків за {quarter} квартал {year} року</h2>
+          <h2 className="text-xl font-semibold">
+            Налаштування податків за {quarter} квартал {year} року
+          </h2>
 
           <div className="flex space-x-2">
             {!error && (
               <select
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                onChange={(e) => {
+                onChange={e => {
                   const [sourceYear, sourceQuarter] = e.target.value.split('-').map(Number);
                   if (sourceYear && sourceQuarter) {
-                    if (confirm(`Ви впевнені, що хочете скопіювати податки з ${sourceQuarter} кварталу ${sourceYear} року в ${quarter} квартал ${year} року?`)) {
+                    if (
+                      confirm(
+                        `Ви впевнені, що хочете скопіювати податки з ${sourceQuarter} кварталу ${sourceYear} року в ${quarter} квартал ${year} року?`
+                      )
+                    ) {
                       copyTaxSettings.mutate({
                         user_id: user?.id || 0,
                         source_year: sourceYear,
@@ -405,7 +409,9 @@ const TaxesPage: React.FC = () => {
                 }}
                 defaultValue=""
               >
-                <option value="" disabled>Скопіювати податки з...</option>
+                <option value="" disabled>
+                  Скопіювати податки з...
+                </option>
                 {Array.from({ length: 5 }, (_, yearOffset) => {
                   const yearValue = new Date().getFullYear() - yearOffset;
                   return Array.from({ length: 4 }, (_, q) => {
@@ -415,7 +421,10 @@ const TaxesPage: React.FC = () => {
                       return null;
                     }
                     return (
-                      <option key={`${yearValue}-${quarterValue}`} value={`${yearValue}-${quarterValue}`}>
+                      <option
+                        key={`${yearValue}-${quarterValue}`}
+                        value={`${yearValue}-${quarterValue}`}
+                      >
                         {quarterValue} квартал {yearValue} року
                       </option>
                     );
@@ -454,7 +463,7 @@ const TaxesPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {effectiveTaxSettings.map((taxSetting) => (
+                {effectiveTaxSettings.map(taxSetting => (
                   <tr key={taxSetting.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {taxSetting.name}
@@ -467,11 +476,13 @@ const TaxesPage: React.FC = () => {
                       {taxSetting.type === 'percentage' ? '%' : ' ₴'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        taxSetting.active === 1
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          taxSetting.active === 1
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
                         {taxSetting.active === 1 ? 'Активний' : 'Неактивний'}
                       </span>
                     </td>

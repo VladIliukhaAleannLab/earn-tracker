@@ -7,24 +7,24 @@ import Header from './Header';
 const Layout: React.FC = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
-  
+
   // Перенаправлення на сторінку входу, якщо користувач не авторизований
   useEffect(() => {
     if (!isLoading && !user) {
       navigate('/login');
     }
   }, [user, isLoading, navigate]);
-  
+
   // Показуємо завантаження, поки перевіряємо аутентифікацію
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">Завантаження...</div>;
   }
-  
+
   // Якщо користувач не авторизований, не рендеримо вміст
   if (!user) {
     return null;
   }
-  
+
   return (
     <div className="flex h-screen bg-gray-100">
       <Sidebar />

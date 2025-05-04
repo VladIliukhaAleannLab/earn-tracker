@@ -34,7 +34,9 @@ const DashboardPage: React.FC = () => {
   const startOfQuarter = DateTime.local(currentYear, firstMonthOfQuarter, 1).startOf('day');
   const endOfQuarter = startOfQuarter.endOf('quarter');
 
-  console.log(`Current quarter: ${currentQuarter} of ${currentYear}: ${startOfQuarter.toISODate()} to ${endOfQuarter.toISODate()}`);
+  console.log(
+    `Current quarter: ${currentQuarter} of ${currentYear}: ${startOfQuarter.toISODate()} to ${endOfQuarter.toISODate()}`
+  );
 
   // Отримання доходів за поточний квартал
   const { data: quarterlyData } = trpc.analytics.calculateTaxes.useQuery(
@@ -45,9 +47,11 @@ const DashboardPage: React.FC = () => {
     },
     {
       enabled: !!user,
-      onSuccess: (_) => {
-        console.log(`Got quarterly tax data for period: ${startOfQuarter.toISODate()} to ${endOfQuarter.toISODate()}`);
-      }
+      onSuccess: _ => {
+        console.log(
+          `Got quarterly tax data for period: ${startOfQuarter.toISODate()} to ${endOfQuarter.toISODate()}`
+        );
+      },
     }
   );
 
@@ -113,7 +117,7 @@ const DashboardPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {incomes.slice(0, 5).map((income) => (
+                {incomes.slice(0, 5).map(income => (
                   <tr key={income.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(income.date).toLocaleDateString()}
@@ -142,7 +146,7 @@ const DashboardPage: React.FC = () => {
         <h2 className="text-lg font-semibold mb-4">Найближчі події</h2>
         {upcomingEvents.length > 0 ? (
           <ul className="space-y-2">
-            {upcomingEvents.map((event) => (
+            {upcomingEvents.map(event => (
               <li key={event.id} className="border-l-4 border-blue-500 pl-4 py-2">
                 <div className="flex justify-between items-center">
                   <div>
@@ -155,8 +159,8 @@ const DashboardPage: React.FC = () => {
                     {event.type === 'tax_payment'
                       ? 'Сплата податків'
                       : event.type === 'report_submission'
-                      ? 'Подання звіту'
-                      : 'Інше'}
+                        ? 'Подання звіту'
+                        : 'Інше'}
                   </span>
                 </div>
               </li>

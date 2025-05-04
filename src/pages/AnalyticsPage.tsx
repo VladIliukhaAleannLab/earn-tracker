@@ -2,7 +2,19 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { trpc } from '../utils/trpc';
 import { DateTime } from 'luxon';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 
 const AnalyticsPage: React.FC = () => {
   const { user } = useAuth();
@@ -22,7 +34,7 @@ const AnalyticsPage: React.FC = () => {
 
       return {
         startDate: start.toISODate() || '',
-        endDate: end.toISODate() || ''
+        endDate: end.toISODate() || '',
       };
     } else {
       // Використовуємо Luxon для розрахунку дат року
@@ -33,7 +45,7 @@ const AnalyticsPage: React.FC = () => {
 
       return {
         startDate: start.toISODate() || '',
-        endDate: end.toISODate() || ''
+        endDate: end.toISODate() || '',
       };
     }
   }, [period, year, quarter]);
@@ -105,8 +117,18 @@ const AnalyticsPage: React.FC = () => {
   // Функція для отримання назви місяця
   function getMonthName(monthIndex: number): string {
     const months = [
-      'Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень',
-      'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'
+      'Січень',
+      'Лютий',
+      'Березень',
+      'Квітень',
+      'Травень',
+      'Червень',
+      'Липень',
+      'Серпень',
+      'Вересень',
+      'Жовтень',
+      'Листопад',
+      'Грудень',
     ];
     return months[monthIndex];
   }
@@ -133,12 +155,10 @@ const AnalyticsPage: React.FC = () => {
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex flex-wrap gap-4 items-center">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Період
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Період</label>
             <select
               value={period}
-              onChange={(e) => setPeriod(e.target.value as 'quarter' | 'year')}
+              onChange={e => setPeriod(e.target.value as 'quarter' | 'year')}
               className="px-3 py-2 border border-gray-300 rounded-md"
             >
               <option value="quarter">Квартал</option>
@@ -147,25 +167,23 @@ const AnalyticsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Рік
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Рік</label>
             <select
               value={year}
               onChange={handleYearChange}
               className="px-3 py-2 border border-gray-300 rounded-md"
             >
               {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                <option key={year} value={year}>{year}</option>
+                <option key={year} value={year}>
+                  {year}
+                </option>
               ))}
             </select>
           </div>
 
           {period === 'quarter' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Квартал
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Квартал</label>
               <select
                 value={quarter}
                 onChange={handleQuarterChange}
@@ -211,14 +229,11 @@ const AnalyticsPage: React.FC = () => {
         {chartData.length > 0 ? (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} ₴`, 'Сума']} />
+                <Tooltip formatter={value => [`${Number(value).toFixed(2)} ₴`, 'Сума']} />
                 <Legend />
                 <Bar dataKey="amount" name="Дохід (₴)" fill="#4F46E5" />
               </BarChart>
@@ -250,7 +265,7 @@ const AnalyticsPage: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${Number(value).toFixed(2)} ₴`, 'Сума']} />
+                <Tooltip formatter={value => [`${Number(value).toFixed(2)} ₴`, 'Сума']} />
               </PieChart>
             </ResponsiveContainer>
           </div>

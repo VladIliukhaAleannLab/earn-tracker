@@ -15,38 +15,45 @@ const IncomePage: React.FC = () => {
   const { user } = useAuth();
   const [isAddingIncome, setIsAddingIncome] = useState(false);
   const [editingIncomeId, setEditingIncomeId] = useState<number | null>(null);
-  
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<IncomeForm>({
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<IncomeForm>({
     defaultValues: {
       currency: 'USD',
       exchange_rate: 1,
       date: new Date().toISOString().split('T')[0],
     },
   });
-  
+
   // Отримання доходів користувача
-  const { data: incomes, isLoading, refetch } = trpc.incomes.getByUser.useQuery(
-    { user_id: user?.id || 0 },
-    { enabled: !!user }
-  );
-  
+  const {
+    data: incomes,
+    isLoading,
+    refetch,
+  } = trpc.incomes.getByUser.useQuery({ user_id: user?.id || 0 }, { enabled: !!user });
+
   // Мутації для операцій з доходами
   const createIncome = trpc.incomes.create.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   const updateIncome = trpc.incomes.update.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   const deleteIncome = trpc.incomes.delete.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   // Обробка відправки форми
   const onSubmit = async (data: IncomeForm) => {
     if (!user) return;
-    
+
     try {
       if (editingIncomeId) {
         // Оновлення існуючого доходу
@@ -62,7 +69,7 @@ const IncomePage: React.FC = () => {
           user_id: user.id,
         });
       }
-      
+
       // Скидання форми та стану
       reset();
       setIsAddingIncome(false);
@@ -71,12 +78,12 @@ const IncomePage: React.FC = () => {
       console.error('Error saving income:', error);
     }
   };
-  
+
   // Функція для редагування доходу
   const handleEdit = (income: any) => {
     setEditingIncomeId(income.id);
     setIsAddingIncome(true);
-    
+
     // Заповнення форми даними доходу
     setValue('amount', income.amount);
     setValue('currency', income.currency);
@@ -84,7 +91,7 @@ const IncomePage: React.FC = () => {
     setValue('description', income.description || '');
     setValue('date', income.date.split('T')[0]);
   };
-  
+
   // Функція для видалення доходу
   const handleDelete = async (id: number) => {
     if (confirm('Ви впевнені, що хочете видалити цей дохід?')) {
@@ -95,18 +102,18 @@ const IncomePage: React.FC = () => {
       }
     }
   };
-  
+
   // Функція для скасування редагування
   const handleCancel = () => {
     setIsAddingIncome(false);
     setEditingIncomeId(null);
     reset();
   };
-  
+
   if (isLoading) {
     return <div>Завантаження...</div>;
   }
-  
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -120,7 +127,7 @@ const IncomePage: React.FC = () => {
           </button>
         )}
       </div>
-      
+
       {/* Форма додавання/редагування доходу */}
       {isAddingIncome && (
         <div className="bg-white p-6 rounded-lg shadow">
@@ -130,30 +137,26 @@ const IncomePage: React.FC = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Сума
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Сума</label>
                 <input
                   type="number"
                   step="0.01"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  {...register('amount', { 
-                    required: 'Це поле обов\'язкове',
-                    min: { value: 0.01, message: 'Сума має бути більше 0' }
+                  {...register('amount', {
+                    required: "Це поле обов'язкове",
+                    min: { value: 0.01, message: 'Сума має бути більше 0' },
                   })}
                 />
                 {errors.amount && (
                   <p className="text-red-500 text-sm mt-1">{errors.amount.message}</p>
                 )}
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Валюта
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Валюта</label>
                 <select
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  {...register('currency', { required: 'Це поле обов\'язкове' })}
+                  {...register('currency', { required: "Це поле обов'язкове" })}
                 >
                   <option value="USD">USD</option>
                   <option value="EUR">EUR</option>
@@ -163,7 +166,7 @@ const IncomePage: React.FC = () => {
                   <p className="text-red-500 text-sm mt-1">{errors.currency.message}</p>
                 )}
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Курс обміну (до гривні)
@@ -172,42 +175,36 @@ const IncomePage: React.FC = () => {
                   type="number"
                   step="0.0001"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  {...register('exchange_rate', { 
-                    required: 'Це поле обов\'язкове',
-                    min: { value: 0.01, message: 'Курс має бути більше 0' }
+                  {...register('exchange_rate', {
+                    required: "Це поле обов'язкове",
+                    min: { value: 0.01, message: 'Курс має бути більше 0' },
                   })}
                 />
                 {errors.exchange_rate && (
                   <p className="text-red-500 text-sm mt-1">{errors.exchange_rate.message}</p>
                 )}
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Дата
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Дата</label>
                 <input
                   type="date"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  {...register('date', { required: 'Це поле обов\'язкове' })}
+                  {...register('date', { required: "Це поле обов'язкове" })}
                 />
-                {errors.date && (
-                  <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
-                )}
+                {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
               </div>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Опис
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Опис</label>
               <textarea
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 rows={3}
                 {...register('description')}
               />
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -226,7 +223,7 @@ const IncomePage: React.FC = () => {
           </form>
         </div>
       )}
-      
+
       {/* Таблиця доходів */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {incomes && incomes.length > 0 ? (
@@ -258,7 +255,7 @@ const IncomePage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {incomes.map((income) => (
+                {incomes.map(income => (
                   <tr key={income.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(income.date).toLocaleDateString()}

@@ -11,34 +11,37 @@ export const trpc = createTRPCReact<AppRouter>();
 function createIPCLink<TRouter extends AnyRouter>(): TRPCLink<TRouter> {
   return () => {
     return ({ op }) => {
-      return observable((observer) => {
+      return observable(observer => {
         const { path, input, type } = op;
 
         console.log(`tRPC client request: ${path}, type: ${type}`, input);
 
         // Використовуємо Electron IPC для комунікації з основним процесом
-        window.electron.ipcRenderer.invoke('trpc', {
-          path,
-          type,
-          input,
-        }).then((result) => {
-          console.log(`tRPC client response: ${path}`, result);
+        window.electron.ipcRenderer
+          .invoke('trpc', {
+            path,
+            type,
+            input,
+          })
+          .then(result => {
+            console.log(`tRPC client response: ${path}`, result);
 
-          if (result && result.error) {
-            observer.error(TRPCClientError.from(result.error));
-          } else {
-            observer.next({
-              result: {
-                type: 'data',
-                data: result.result ?? null,
-              },
-            });
-            observer.complete();
-          }
-        }).catch((error) => {
-          console.error(`tRPC client error: ${path}`, error);
-          observer.error(TRPCClientError.from(error));
-        });
+            if (result && result.error) {
+              observer.error(TRPCClientError.from(result.error));
+            } else {
+              observer.next({
+                result: {
+                  type: 'data',
+                  data: result.result ?? null,
+                },
+              });
+              observer.complete();
+            }
+          })
+          .catch(error => {
+            console.error(`tRPC client error: ${path}`, error);
+            observer.error(TRPCClientError.from(error));
+          });
 
         // Повернення функції для скасування підписки
         return () => {

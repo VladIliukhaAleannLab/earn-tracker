@@ -19,15 +19,13 @@ const Sidebar: React.FC = () => {
       </div>
       <nav className="mt-6">
         <ul>
-          {menuItems.map((item) => (
+          {menuItems.map(item => (
             <li key={item.path} className="mb-2">
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
                   `flex items-center px-4 py-2 ${
-                    isActive
-                      ? 'bg-gray-700 text-white'
-                      : 'text-gray-300 hover:bg-gray-700'
+                    isActive ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'
                   }`
                 }
               >

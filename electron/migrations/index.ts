@@ -1,6 +1,6 @@
 import { Kysely } from 'kysely';
 import { Database } from '../database';
-import { addQuarterYearToTaxSettings } from "./add-quarter-year-to-tax-settings";
+import { addQuarterYearToTaxSettings } from './add-quarter-year-to-tax-settings';
 
 // Функція для запуску всіх міграцій
 export async function runMigrations(db: Kysely<Database>) {
@@ -8,7 +8,7 @@ export async function runMigrations(db: Kysely<Database>) {
 
   // Масив міграцій для запуску
   const migrations = [
-    { name: 'add-quarter-year-to-tax-settings', migrate: () => addQuarterYearToTaxSettings(db) }
+    { name: 'add-quarter-year-to-tax-settings', migrate: () => addQuarterYearToTaxSettings(db) },
   ];
 
   // Запускаємо кожну міграцію окремо

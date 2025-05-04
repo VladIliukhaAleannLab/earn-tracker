@@ -13,7 +13,10 @@
     "build:electron": "tsc -p electron/tsconfig.json",
     "package": "electron-builder",
     "test": "vitest run",
-    "clean": "rimraf dist node_modules"
+    "clean": "rimraf dist node_modules",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@emotion/react": "^11.11.1",
@@ -45,13 +48,21 @@
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
     "electron-rebuild": "3.2.9",
+    "husky": "^9.1.7",
     "kysely-codegen": "^0.10.1",
+    "lint-staged": "^15.5.1",
     "postcss": "^8.4.31",
+    "prettier": "^3.5.3",
     "rimraf": "^5.0.5",
     "tailwindcss": "^3.3.5",
     "typescript": "^5.3.2",
     "vite": "^5.0.4",
     "vitest": "^0.34.6"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md}": [
+      "prettier --write"
+    ]
   },
   "build": {
     "appId": "com.earntracker.app",

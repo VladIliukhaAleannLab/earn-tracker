@@ -16,7 +16,8 @@ export async function addQuarterYearToTaxSettings(db: Kysely<Database>) {
     // Додаємо колонки year і quarter
     try {
       // Спробуємо додати колонку year
-      await db.schema.alterTable('tax_settings')
+      await db.schema
+        .alterTable('tax_settings')
         .addColumn('year', 'integer', col => col.defaultTo(currentYear))
         .execute();
       console.log('Year column added successfully');
@@ -26,7 +27,8 @@ export async function addQuarterYearToTaxSettings(db: Kysely<Database>) {
 
     try {
       // Спробуємо додати колонку quarter
-      await db.schema.alterTable('tax_settings')
+      await db.schema
+        .alterTable('tax_settings')
         .addColumn('quarter', 'integer', col => col.defaultTo(currentQuarter))
         .execute();
       console.log('Quarter column added successfully');
@@ -36,15 +38,13 @@ export async function addQuarterYearToTaxSettings(db: Kysely<Database>) {
 
     // Оновлюємо існуючі записи, встановлюючи поточний рік і квартал для NULL значень
     try {
-      await db.updateTable('tax_settings')
+      await db
+        .updateTable('tax_settings')
         .set({
           year: currentYear,
-          quarter: currentQuarter
+          quarter: currentQuarter,
         })
-        .where(eb => eb.or([
-          eb('year', 'is', null),
-          eb('quarter', 'is', null)
-        ]))
+        .where(eb => eb.or([eb('year', 'is', null), eb('quarter', 'is', null)]))
         .execute();
       console.log('Updated existing records with current year and quarter');
     } catch (error) {

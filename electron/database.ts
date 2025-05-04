@@ -75,11 +75,11 @@ async function createTables(db: Kysely<Database>) {
   await db.schema
     .createTable('users')
     .ifNotExists()
-    .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-    .addColumn('username', 'text', (col) => col.notNull().unique())
-    .addColumn('password_hash', 'text', (col) => col.notNull())
-    .addColumn('created_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
-    .addColumn('updated_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('id', 'integer', col => col.primaryKey().autoIncrement())
+    .addColumn('username', 'text', col => col.notNull().unique())
+    .addColumn('password_hash', 'text', col => col.notNull())
+    .addColumn('created_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('updated_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
     .execute();
   console.log('Users table created');
 
@@ -87,15 +87,17 @@ async function createTables(db: Kysely<Database>) {
   await db.schema
     .createTable('incomes')
     .ifNotExists()
-    .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-    .addColumn('user_id', 'integer', (col) => col.notNull().references('users.id').onDelete('cascade'))
-    .addColumn('amount', 'real', (col) => col.notNull())
-    .addColumn('currency', 'text', (col) => col.notNull())
-    .addColumn('exchange_rate', 'real', (col) => col.notNull())
+    .addColumn('id', 'integer', col => col.primaryKey().autoIncrement())
+    .addColumn('user_id', 'integer', col =>
+      col.notNull().references('users.id').onDelete('cascade')
+    )
+    .addColumn('amount', 'real', col => col.notNull())
+    .addColumn('currency', 'text', col => col.notNull())
+    .addColumn('exchange_rate', 'real', col => col.notNull())
     .addColumn('description', 'text')
-    .addColumn('date', 'text', (col) => col.notNull())
-    .addColumn('created_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
-    .addColumn('updated_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('date', 'text', col => col.notNull())
+    .addColumn('created_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('updated_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
     .execute();
   console.log('Incomes table created');
 
@@ -103,16 +105,20 @@ async function createTables(db: Kysely<Database>) {
   await db.schema
     .createTable('tax_settings')
     .ifNotExists()
-    .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-    .addColumn('user_id', 'integer', (col) => col.notNull().references('users.id').onDelete('cascade'))
-    .addColumn('name', 'text', (col) => col.notNull())
-    .addColumn('type', 'text', (col) => col.notNull())
-    .addColumn('value', 'real', (col) => col.notNull())
-    .addColumn('active', 'boolean', (col) => col.notNull().defaultTo(true))
-    .addColumn('year', 'integer', (col) => col.notNull().defaultTo(new Date().getFullYear()))
-    .addColumn('quarter', 'integer', (col) => col.notNull().defaultTo(Math.floor(new Date().getMonth() / 3) + 1))
-    .addColumn('created_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
-    .addColumn('updated_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('id', 'integer', col => col.primaryKey().autoIncrement())
+    .addColumn('user_id', 'integer', col =>
+      col.notNull().references('users.id').onDelete('cascade')
+    )
+    .addColumn('name', 'text', col => col.notNull())
+    .addColumn('type', 'text', col => col.notNull())
+    .addColumn('value', 'real', col => col.notNull())
+    .addColumn('active', 'boolean', col => col.notNull().defaultTo(true))
+    .addColumn('year', 'integer', col => col.notNull().defaultTo(new Date().getFullYear()))
+    .addColumn('quarter', 'integer', col =>
+      col.notNull().defaultTo(Math.floor(new Date().getMonth() / 3) + 1)
+    )
+    .addColumn('created_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('updated_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
     .execute();
   console.log('Tax settings table created');
 
@@ -120,26 +126,34 @@ async function createTables(db: Kysely<Database>) {
   await db.schema
     .createTable('events')
     .ifNotExists()
-    .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
-    .addColumn('user_id', 'integer', (col) => col.notNull().references('users.id').onDelete('cascade'))
-    .addColumn('type', 'text', (col) => col.notNull())
-    .addColumn('description', 'text', (col) => col.notNull())
-    .addColumn('date', 'text', (col) => col.notNull())
-    .addColumn('completed', 'boolean', (col) => col.notNull().defaultTo(false))
-    .addColumn('created_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
-    .addColumn('updated_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('id', 'integer', col => col.primaryKey().autoIncrement())
+    .addColumn('user_id', 'integer', col =>
+      col.notNull().references('users.id').onDelete('cascade')
+    )
+    .addColumn('type', 'text', col => col.notNull())
+    .addColumn('description', 'text', col => col.notNull())
+    .addColumn('date', 'text', col => col.notNull())
+    .addColumn('completed', 'boolean', col => col.notNull().defaultTo(false))
+    .addColumn('created_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
+    .addColumn('updated_at', 'text', col => col.notNull().defaultTo(new Date().toISOString()))
     .execute();
   console.log('Events table created');
 
   // Додаємо тестового користувача, якщо таблиця порожня
-  const userCount = await db.selectFrom('users').select(db.fn.count('id').as('count')).executeTakeFirst();
+  const userCount = await db
+    .selectFrom('users')
+    .select(db.fn.count('id').as('count'))
+    .executeTakeFirst();
   if (userCount && Number(userCount.count) === 0) {
-    await db.insertInto('users').values({
-      username: 'admin',
-      password_hash: 'admin', // В реальному додатку це має бути хеш
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }).execute();
+    await db
+      .insertInto('users')
+      .values({
+        username: 'admin',
+        password_hash: 'admin', // В реальному додатку це має бути хеш
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .execute();
     console.log('Test user created');
   }
 }

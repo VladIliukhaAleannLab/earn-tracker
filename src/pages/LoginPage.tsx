@@ -15,7 +15,11 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginForm>();
 
   const createUser = trpc.users.create.useMutation();
 
@@ -84,7 +88,7 @@ const LoginPage: React.FC = () => {
               id="username"
               type="text"
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              {...register('username', { required: 'Це поле обов\'язкове' })}
+              {...register('username', { required: "Це поле обов'язкове" })}
             />
             {errors.username && (
               <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
@@ -100,8 +104,8 @@ const LoginPage: React.FC = () => {
               type="password"
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
               {...register('password', {
-                required: 'Це поле обов\'язкове',
-                minLength: { value: 6, message: 'Пароль має бути не менше 6 символів' }
+                required: "Це поле обов'язкове",
+                minLength: { value: 6, message: 'Пароль має бути не менше 6 символів' },
               })}
             />
             {errors.password && (

@@ -16,7 +16,13 @@ const EventsPage: React.FC = () => {
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<EventForm>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<EventForm>({
     defaultValues: {
       type: 'tax_payment',
       date: new Date().toISOString().split('T')[0],
@@ -25,10 +31,11 @@ const EventsPage: React.FC = () => {
   });
 
   // Отримання подій користувача
-  const { data: events, isLoading, refetch } = trpc.events.getByUser.useQuery(
-    { user_id: user?.id || 0 },
-    { enabled: !!user }
-  );
+  const {
+    data: events,
+    isLoading,
+    refetch,
+  } = trpc.events.getByUser.useQuery({ user_id: user?.id || 0 }, { enabled: !!user });
 
   // Мутації для операцій з подіями
   const createEvent = trpc.events.create.useMutation({
@@ -153,30 +160,24 @@ const EventsPage: React.FC = () => {
           </h2>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Тип події
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Тип події</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                {...register('type', { required: 'Це поле обов\'язкове' })}
+                {...register('type', { required: "Це поле обов'язкове" })}
               >
                 <option value="tax_payment">Сплата податків</option>
                 <option value="report_submission">Подання звіту</option>
                 <option value="other">Інше</option>
               </select>
-              {errors.type && (
-                <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
-              )}
+              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Опис
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Опис</label>
               <input
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                {...register('description', { required: 'Це поле обов\'язкове' })}
+                {...register('description', { required: "Це поле обов'язкове" })}
               />
               {errors.description && (
                 <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
@@ -184,17 +185,13 @@ const EventsPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Дата
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Дата</label>
               <input
                 type="date"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                {...register('date', { required: 'Це поле обов\'язкове' })}
+                {...register('date', { required: "Це поле обов'язкове" })}
               />
-              {errors.date && (
-                <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
-              )}
+              {errors.date && <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>}
             </div>
 
             <div className="flex items-center">
@@ -289,7 +286,7 @@ const EventsPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredEvents.map((event) => (
+                {filteredEvents.map(event => (
                   <tr key={event.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -299,11 +296,13 @@ const EventsPage: React.FC = () => {
                           onChange={() => handleToggleStatus(event)}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
-                        <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                          event.completed === 1
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span
+                          className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                            event.completed === 1
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                          }`}
+                        >
                           {event.completed === 1 ? 'Виконано' : 'Очікує'}
                         </span>
                       </div>
@@ -312,8 +311,8 @@ const EventsPage: React.FC = () => {
                       {event.type === 'tax_payment'
                         ? 'Сплата податків'
                         : event.type === 'report_submission'
-                        ? 'Подання звіту'
-                        : 'Інше'}
+                          ? 'Подання звіту'
+                          : 'Інше'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {event.description}
@@ -341,9 +340,7 @@ const EventsPage: React.FC = () => {
             </table>
           </div>
         ) : (
-          <div className="p-6 text-center text-gray-500">
-            Немає подій для відображення.
-          </div>
+          <div className="p-6 text-center text-gray-500">Немає подій для відображення.</div>
         )}
       </div>
     </div>
