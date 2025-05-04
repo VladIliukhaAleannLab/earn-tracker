@@ -15,7 +15,7 @@ const EventsPage: React.FC = () => {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [editingEventId, setEditingEventId] = useState<number | null>(null);
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
-  
+
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<EventForm>({
     defaultValues: {
       type: 'tax_payment',
@@ -23,30 +23,30 @@ const EventsPage: React.FC = () => {
       completed: false,
     },
   });
-  
+
   // Отримання подій користувача
   const { data: events, isLoading, refetch } = trpc.events.getByUser.useQuery(
     { user_id: user?.id || 0 },
     { enabled: !!user }
   );
-  
+
   // Мутації для операцій з подіями
   const createEvent = trpc.events.create.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   const updateEvent = trpc.events.update.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   const deleteEvent = trpc.events.delete.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   // Обробка відправки форми
   const onSubmit = async (data: EventForm) => {
     if (!user) return;
-    
+
     try {
       if (editingEventId) {
         // Оновлення існуючої події
@@ -62,7 +62,7 @@ const EventsPage: React.FC = () => {
           user_id: user.id,
         });
       }
-      
+
       // Скидання форми та стану
       reset();
       setIsAddingEvent(false);
@@ -71,19 +71,19 @@ const EventsPage: React.FC = () => {
       console.error('Error saving event:', error);
     }
   };
-  
+
   // Функція для редагування події
   const handleEdit = (event: any) => {
     setEditingEventId(event.id);
     setIsAddingEvent(true);
-    
+
     // Заповнення форми даними події
     setValue('type', event.type);
     setValue('description', event.description);
     setValue('date', event.date.split('T')[0]);
-    setValue('completed', event.completed);
+    setValue('completed', event.completed === 1); // Convert 0/1 to boolean for form
   };
-  
+
   // Функція для видалення події
   const handleDelete = async (id: number) => {
     if (confirm('Ви впевнені, що хочете видалити цю подію?')) {
@@ -94,43 +94,43 @@ const EventsPage: React.FC = () => {
       }
     }
   };
-  
+
   // Функція для зміни статусу події
   const handleToggleStatus = async (event: any) => {
     try {
       await updateEvent.mutateAsync({
         id: event.id,
-        completed: !event.completed,
+        completed: event.completed === 1 ? 0 : 1, // Toggle between 0 and 1
         user_id: user?.id || 0,
       });
     } catch (error) {
       console.error('Error updating event status:', error);
     }
   };
-  
+
   // Функція для скасування редагування
   const handleCancel = () => {
     setIsAddingEvent(false);
     setEditingEventId(null);
     reset();
   };
-  
+
   // Фільтрація подій
   const filteredEvents = React.useMemo(() => {
     if (!events) return [];
-    
+
     return events.filter(event => {
       if (filter === 'all') return true;
-      if (filter === 'completed') return event.completed;
-      if (filter === 'pending') return !event.completed;
+      if (filter === 'completed') return event.completed === 1;
+      if (filter === 'pending') return event.completed === 0;
       return true;
     });
   }, [events, filter]);
-  
+
   if (isLoading) {
     return <div>Завантаження...</div>;
   }
-  
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -144,7 +144,7 @@ const EventsPage: React.FC = () => {
           </button>
         )}
       </div>
-      
+
       {/* Форма додавання/редагування події */}
       {isAddingEvent && (
         <div className="bg-white p-6 rounded-lg shadow">
@@ -168,7 +168,7 @@ const EventsPage: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Опис
@@ -182,7 +182,7 @@ const EventsPage: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Дата
@@ -196,7 +196,7 @@ const EventsPage: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.date.message}</p>
               )}
             </div>
-            
+
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -208,7 +208,7 @@ const EventsPage: React.FC = () => {
                 Виконано
               </label>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -227,7 +227,7 @@ const EventsPage: React.FC = () => {
           </form>
         </div>
       )}
-      
+
       {/* Фільтри */}
       <div className="bg-white p-4 rounded-lg shadow">
         <div className="flex space-x-4">
@@ -263,7 +263,7 @@ const EventsPage: React.FC = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Список подій */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {filteredEvents.length > 0 ? (
@@ -295,16 +295,16 @@ const EventsPage: React.FC = () => {
                       <div className="flex items-center">
                         <input
                           type="checkbox"
-                          checked={event.completed}
+                          checked={event.completed === 1}
                           onChange={() => handleToggleStatus(event)}
                           className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                         />
                         <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                          event.completed
+                          event.completed === 1
                             ? 'bg-green-100 text-green-800'
                             : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {event.completed ? 'Виконано' : 'Очікує'}
+                          {event.completed === 1 ? 'Виконано' : 'Очікує'}
                         </span>
                       </div>
                     </td>

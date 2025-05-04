@@ -28,9 +28,15 @@ const userSchema = z.object({
 });
 
 const incomeSchema = z.object({
-  amount: z.number().positive(),
+  amount: z.preprocess(
+    Number,
+    z.number().positive({ message: "Сума має бути більше 0" })
+  ),
   currency: z.string(),
-  exchange_rate: z.number().positive(),
+  exchange_rate: z.preprocess(
+      Number,
+    z.number().positive({ message: "Курс обміну має бути більше 0" })
+  ),
   description: z.string().optional(),
   date: z.string(),
   user_id: z.number(),
@@ -39,8 +45,18 @@ const incomeSchema = z.object({
 const taxSettingSchema = z.object({
   name: z.string(),
   type: z.enum(['fixed', 'percentage']),
-  value: z.number().positive(),
-  active: z.boolean(),
+  value: z.preprocess(
+    (val) => (typeof val === 'string' ? parseFloat(val) : val),
+    z.number().positive({ message: "Значення має бути більше 0" })
+  ),
+  active: z.preprocess(
+    (val) => {
+      if (typeof val === 'boolean') return val ? 1 : 0;
+      if (typeof val === 'string') return val === 'true' || val === '1' ? 1 : 0;
+      return val ? 1 : 0;
+    },
+    z.number().min(0).max(1)
+  ), // Transform various inputs to 0/1 for SQLite
   user_id: z.number(),
 });
 
@@ -48,7 +64,14 @@ const eventSchema = z.object({
   type: z.enum(['tax_payment', 'report_submission', 'other']),
   description: z.string(),
   date: z.string(),
-  completed: z.boolean(),
+  completed: z.preprocess(
+    (val) => {
+      if (typeof val === 'boolean') return val ? 1 : 0;
+      if (typeof val === 'string') return val === 'true' || val === '1' ? 1 : 0;
+      return val ? 1 : 0;
+    },
+    z.number().min(0).max(1)
+  ), // Transform various inputs to 0/1 for SQLite
   user_id: z.number(),
 });
 
@@ -148,6 +171,9 @@ const appRouter = router({
       .input(incomeSchema)
       .mutation(async ({ input, ctx }) => {
         // Використовуємо SQL для вставки даних
+
+          console.log("Creating income:", input)
+
         const result = await ctx.db
           .insertInto('incomes')
           .values({
@@ -218,7 +244,7 @@ const appRouter = router({
             name: input.name,
             type: input.type,
             value: input.value,
-            active: input.active,
+            active: input.active, // Already transformed by Zod schema
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -246,6 +272,7 @@ const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
 
+        // No need to manually convert boolean to 0/1 as it's handled by Zod schema
         return ctx.db
           .updateTable('tax_settings')
           .set({
@@ -280,7 +307,7 @@ const appRouter = router({
             type: input.type,
             description: input.description,
             date: input.date,
-            completed: input.completed,
+            completed: input.completed, // Already transformed by Zod schema
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -308,6 +335,7 @@ const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
 
+        // No need to manually convert boolean to 0/1 as it's handled by Zod schema
         return ctx.db
           .updateTable('events')
           .set({
@@ -375,7 +403,7 @@ const appRouter = router({
         const taxSettings = await ctx.db
           .selectFrom('tax_settings')
           .where('user_id', '==', input.user_id)
-          .where('active', '==', true)
+          .where('active', '==', 1) // Using 1 instead of true for SQLite compatibility
           .select(['name', 'type', 'value'])
           .execute();
 

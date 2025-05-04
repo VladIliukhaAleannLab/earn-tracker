@@ -31,7 +31,7 @@ export interface TaxSettingTable {
   name: string;
   type: 'fixed' | 'percentage';
   value: number;
-  active: boolean;
+  active: number; // 0 = false, 1 = true for SQLite compatibility
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +42,7 @@ export interface EventTable {
   type: 'tax_payment' | 'report_submission' | 'other';
   description: string;
   date: string;
-  completed: boolean;
+  completed: number; // 0 = false, 1 = true for SQLite compatibility
   created_at: string;
   updated_at: string;
 }

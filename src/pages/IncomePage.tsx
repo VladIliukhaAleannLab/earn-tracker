@@ -170,7 +170,7 @@ const IncomePage: React.FC = () => {
                 </label>
                 <input
                   type="number"
-                  step="0.01"
+                  step="0.0001"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   {...register('exchange_rate', { 
                     required: 'Це поле обов\'язкове',

@@ -14,37 +14,37 @@ const TaxesPage: React.FC = () => {
   const { user } = useAuth();
   const [isAddingTax, setIsAddingTax] = useState(false);
   const [editingTaxId, setEditingTaxId] = useState<number | null>(null);
-  
+
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<TaxSettingForm>({
     defaultValues: {
       type: 'percentage',
       active: true,
     },
   });
-  
+
   // Отримання податкових налаштувань користувача
   const { data: taxSettings, isLoading, refetch } = trpc.taxSettings.getByUser.useQuery(
     { user_id: user?.id || 0 },
     { enabled: !!user }
   );
-  
+
   // Мутації для операцій з податковими налаштуваннями
   const createTaxSetting = trpc.taxSettings.create.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   const updateTaxSetting = trpc.taxSettings.update.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   const deleteTaxSetting = trpc.taxSettings.delete.useMutation({
     onSuccess: () => refetch(),
   });
-  
+
   // Обробка відправки форми
   const onSubmit = async (data: TaxSettingForm) => {
     if (!user) return;
-    
+
     try {
       if (editingTaxId) {
         // Оновлення існуючого податкового налаштування
@@ -60,7 +60,7 @@ const TaxesPage: React.FC = () => {
           user_id: user.id,
         });
       }
-      
+
       // Скидання форми та стану
       reset();
       setIsAddingTax(false);
@@ -69,19 +69,19 @@ const TaxesPage: React.FC = () => {
       console.error('Error saving tax setting:', error);
     }
   };
-  
+
   // Функція для редагування податкового налаштування
   const handleEdit = (taxSetting: any) => {
     setEditingTaxId(taxSetting.id);
     setIsAddingTax(true);
-    
+
     // Заповнення форми даними податкового налаштування
     setValue('name', taxSetting.name);
     setValue('type', taxSetting.type);
     setValue('value', taxSetting.value);
-    setValue('active', taxSetting.active);
+    setValue('active', taxSetting.active === 1); // Convert 0/1 to boolean for form
   };
-  
+
   // Функція для видалення податкового налаштування
   const handleDelete = async (id: number) => {
     if (confirm('Ви впевнені, що хочете видалити це податкове налаштування?')) {
@@ -92,23 +92,23 @@ const TaxesPage: React.FC = () => {
       }
     }
   };
-  
+
   // Функція для скасування редагування
   const handleCancel = () => {
     setIsAddingTax(false);
     setEditingTaxId(null);
     reset();
   };
-  
+
   // Отримання поточної дати
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
   const currentQuarter = Math.floor(currentDate.getMonth() / 3) + 1;
-  
+
   // Розрахунок початку і кінця поточного кварталу
   const startOfQuarter = new Date(currentYear, (currentQuarter - 1) * 3, 1);
   const endOfQuarter = new Date(currentYear, currentQuarter * 3, 0);
-  
+
   // Отримання податків за поточний квартал
   const { data: quarterlyTaxes } = trpc.analytics.calculateTaxes.useQuery(
     {
@@ -118,11 +118,11 @@ const TaxesPage: React.FC = () => {
     },
     { enabled: !!user }
   );
-  
+
   if (isLoading) {
     return <div>Завантаження...</div>;
   }
-  
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -136,13 +136,13 @@ const TaxesPage: React.FC = () => {
           </button>
         )}
       </div>
-      
+
       {/* Інформація про податки за поточний квартал */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">
           Податки за {currentQuarter} квартал {currentYear} року
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-gray-50 p-4 rounded-md">
             <p className="text-sm text-gray-500">Загальний дохід</p>
@@ -150,7 +150,7 @@ const TaxesPage: React.FC = () => {
               {quarterlyTaxes?.totalIncome.toFixed(2) || '0.00'} ₴
             </p>
           </div>
-          
+
           <div className="bg-gray-50 p-4 rounded-md">
             <p className="text-sm text-gray-500">Загальний податок</p>
             <p className="text-2xl font-bold text-red-600">
@@ -158,7 +158,7 @@ const TaxesPage: React.FC = () => {
             </p>
           </div>
         </div>
-        
+
         {quarterlyTaxes?.taxes && quarterlyTaxes.taxes.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -190,7 +190,7 @@ const TaxesPage: React.FC = () => {
           <p className="text-gray-500">Немає податків для відображення</p>
         )}
       </div>
-      
+
       {/* Форма додавання/редагування податкового налаштування */}
       {isAddingTax && (
         <div className="bg-white p-6 rounded-lg shadow">
@@ -211,7 +211,7 @@ const TaxesPage: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Тип податку
@@ -227,7 +227,7 @@ const TaxesPage: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Значення
@@ -236,7 +236,7 @@ const TaxesPage: React.FC = () => {
                 type="number"
                 step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                {...register('value', { 
+                {...register('value', {
                   required: 'Це поле обов\'язкове',
                   min: { value: 0, message: 'Значення має бути більше або дорівнювати 0' }
                 })}
@@ -245,7 +245,7 @@ const TaxesPage: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.value.message}</p>
               )}
             </div>
-            
+
             <div className="flex items-center">
               <input
                 type="checkbox"
@@ -257,7 +257,7 @@ const TaxesPage: React.FC = () => {
                 Активний
               </label>
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
@@ -276,11 +276,11 @@ const TaxesPage: React.FC = () => {
           </form>
         </div>
       )}
-      
+
       {/* Таблиця податкових налаштувань */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <h2 className="text-xl font-semibold p-6 border-b">Налаштування податків</h2>
-        
+
         {taxSettings && taxSettings.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -318,11 +318,11 @@ const TaxesPage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        taxSetting.active
+                        taxSetting.active === 1
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {taxSetting.active ? 'Активний' : 'Неактивний'}
+                        {taxSetting.active === 1 ? 'Активний' : 'Неактивний'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
