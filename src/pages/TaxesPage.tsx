@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
 import { trpc } from '../utils/trpc';
@@ -102,14 +102,30 @@ const TaxesPage: React.FC = () => {
 
   // Отримання поточної дати
   const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentQuarter = Math.floor(currentDate.getMonth() / 3) + 1;
+  const [year, setYear] = useState<number>(currentDate.getFullYear());
+  const [quarter, setQuarter] = useState<number>(Math.floor(currentDate.getMonth() / 3) + 1);
 
-  // Розрахунок початку і кінця поточного кварталу
-  const startOfQuarter = new Date(currentYear, (currentQuarter - 1) * 3, 1);
-  const endOfQuarter = new Date(currentYear, currentQuarter * 3, 0);
+  // Розрахунок початку і кінця вибраного кварталу
+  const { startOfQuarter, endOfQuarter } = useMemo(() => {
+    const start = new Date(year, (quarter - 1) * 3, 1);
+    const end = new Date(year, quarter * 3, 0);
+    return {
+      startOfQuarter: start,
+      endOfQuarter: end
+    };
+  }, [year, quarter]);
 
-  // Отримання податків за поточний квартал
+  // Функція для зміни року
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setYear(parseInt(e.target.value));
+  };
+
+  // Функція для зміни кварталу
+  const handleQuarterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setQuarter(parseInt(e.target.value));
+  };
+
+  // Отримання податків за вибраний квартал
   const { data: quarterlyTaxes } = trpc.analytics.calculateTaxes.useQuery(
     {
       user_id: user?.id || 0,
@@ -137,11 +153,46 @@ const TaxesPage: React.FC = () => {
         )}
       </div>
 
-      {/* Інформація про податки за поточний квартал */}
+      {/* Інформація про податки за вибраний квартал */}
       <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">
-          Податки за {currentQuarter} квартал {currentYear} року
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">
+            Податки за {quarter} квартал {year} року
+          </h2>
+
+          <div className="flex space-x-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Рік
+              </label>
+              <select
+                value={year}
+                onChange={handleYearChange}
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              >
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Квартал
+              </label>
+              <select
+                value={quarter}
+                onChange={handleQuarterChange}
+                className="px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value={1}>1 квартал</option>
+                <option value={2}>2 квартал</option>
+                <option value={3}>3 квартал</option>
+                <option value={4}>4 квартал</option>
+              </select>
+            </div>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div className="bg-gray-50 p-4 rounded-md">
