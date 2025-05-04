@@ -31,7 +31,7 @@ export const nbuService = {
       const formattedDate = dt.toFormat('yyyyMMdd');
 
       // Формуємо URL для запиту до API НБУ
-      const url = `https://bank.gov.ua  /NBUStatService/v1/statdirectory/exchange?valcode=${currency}&date=${formattedDate}&json`;
+      const url = `https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=${currency}&date=${formattedDate}&json`;
 
       // Виконуємо запит до API
       const response = await fetch(url);
