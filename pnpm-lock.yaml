@@ -23,6 +23,9 @@ dependencies:
   '@trpc/server':
     specifier: ^10.43.6
     version: 10.45.2
+  '@types/luxon':
+    specifier: ^3.6.2
+    version: 3.6.2
   better-sqlite3:
     specifier: ^9.2.2
     version: 9.6.0
@@ -32,6 +35,9 @@ dependencies:
   kysely:
     specifier: ^0.26.3
     version: 0.26.3
+  luxon:
+    specifier: ^3.6.1
+    version: 3.6.1
   react:
     specifier: ^18.2.0
     version: 18.3.1
@@ -1172,6 +1178,10 @@ packages:
     dependencies:
       '@types/node': 20.17.32
     dev: true
+
+  /@types/luxon@3.6.2:
+    resolution: {integrity: sha512-R/BdP7OxEMc44l2Ex5lSXHoIXTB2JLNa3y2QISIbr58U/YcsffyQrYW//hZSdrfxrjRZj3GcUoxMPGdO8gSYuw==}
+    dev: false
 
   /@types/ms@2.1.0:
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
@@ -3270,6 +3280,11 @@ packages:
     resolution: {integrity: sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==}
     engines: {node: '>=12'}
     dev: true
+
+  /luxon@3.6.1:
+    resolution: {integrity: sha512-tJLxrKJhO2ukZ5z0gyjY1zPh3Rh88Ej9P7jNrZiHMUXHae1yvI2imgOZtL1TO8TW6biMMKfTtAOoEJANgtWBMQ==}
+    engines: {node: '>=12'}
+    dev: false
 
   /lzma-native@8.0.6:
     resolution: {integrity: sha512-09xfg67mkL2Lz20PrrDeNYZxzeW7ADtpYFbwSQh9U8+76RIzx5QsJBMy8qikv3hbUPfpy6hqwxt6FcGK81g9AA==}

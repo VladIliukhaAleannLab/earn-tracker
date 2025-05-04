@@ -1,53 +1,56 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { trpc } from '../utils/trpc';
+import { DateTime } from 'luxon';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
-  
+
   // Отримання доходів користувача
   const { data: incomes, isLoading: incomesLoading } = trpc.incomes.getByUser.useQuery(
     { user_id: user?.id || 0 },
     { enabled: !!user }
   );
-  
+
   // Отримання подій користувача
   const { data: events, isLoading: eventsLoading } = trpc.events.getByUser.useQuery(
     { user_id: user?.id || 0 },
     { enabled: !!user }
   );
-  
-  // Отримання податкових налаштувань користувача
-  const { data: taxSettings, isLoading: taxSettingsLoading } = trpc.taxSettings.getByUser.useQuery(
-    { user_id: user?.id || 0 },
-    { enabled: !!user }
-  );
-  
+
   // Розрахунок загального доходу
   const totalIncome = React.useMemo(() => {
     if (!incomes) return 0;
     return incomes.reduce((sum, income) => sum + income.amount * income.exchange_rate, 0);
   }, [incomes]);
-  
-  // Отримання поточної дати
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentQuarter = Math.floor(currentDate.getMonth() / 3) + 1;
-  
-  // Розрахунок початку і кінця поточного кварталу
-  const startOfQuarter = new Date(currentYear, (currentQuarter - 1) * 3, 1);
-  const endOfQuarter = new Date(currentYear, currentQuarter * 3, 0);
-  
+
+  // Отримання поточної дати з використанням Luxon
+  const currentDate = DateTime.now();
+  const currentYear = currentDate.year;
+  const currentQuarter = Math.ceil(currentDate.month / 3);
+
+  // Розрахунок початку і кінця поточного кварталу з використанням Luxon
+  const firstMonthOfQuarter = (currentQuarter - 1) * 3 + 1;
+  const startOfQuarter = DateTime.local(currentYear, firstMonthOfQuarter, 1).startOf('day');
+  const endOfQuarter = startOfQuarter.endOf('quarter');
+
+  console.log(`Current quarter: ${currentQuarter} of ${currentYear}: ${startOfQuarter.toISODate()} to ${endOfQuarter.toISODate()}`);
+
   // Отримання доходів за поточний квартал
   const { data: quarterlyData } = trpc.analytics.calculateTaxes.useQuery(
     {
       user_id: user?.id || 0,
-      start_date: startOfQuarter.toISOString().split('T')[0],
-      end_date: endOfQuarter.toISOString().split('T')[0],
+      start_date: startOfQuarter.toISODate() || '',
+      end_date: endOfQuarter.toISODate() || '',
     },
-    { enabled: !!user }
+    {
+      enabled: !!user,
+      onSuccess: (_) => {
+        console.log(`Got quarterly tax data for period: ${startOfQuarter.toISODate()} to ${endOfQuarter.toISODate()}`);
+      }
+    }
   );
-  
+
   // Найближчі події
   const upcomingEvents = React.useMemo(() => {
     if (!events) return [];
@@ -56,29 +59,29 @@ const DashboardPage: React.FC = () => {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(0, 3);
   }, [events]);
-  
-  if (incomesLoading || eventsLoading || taxSettingsLoading) {
+
+  if (incomesLoading || eventsLoading) {
     return <div>Завантаження...</div>;
   }
-  
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Панель управління</h1>
-      
+
       {/* Картки з основною інформацією */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold mb-2">Загальний дохід</h2>
           <p className="text-2xl font-bold text-green-600">{totalIncome.toFixed(2)} ₴</p>
         </div>
-        
+
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold mb-2">Дохід за квартал</h2>
           <p className="text-2xl font-bold text-blue-600">
             {quarterlyData?.totalIncome.toFixed(2) || '0.00'} ₴
           </p>
         </div>
-        
+
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold mb-2">Податки за квартал</h2>
           <p className="text-2xl font-bold text-red-600">
@@ -86,7 +89,7 @@ const DashboardPage: React.FC = () => {
           </p>
         </div>
       </div>
-      
+
       {/* Останні доходи */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4">Останні доходи</h2>
@@ -133,7 +136,7 @@ const DashboardPage: React.FC = () => {
           <p className="text-gray-500">Немає доходів для відображення</p>
         )}
       </div>
-      
+
       {/* Найближчі події */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h2 className="text-lg font-semibold mb-4">Найближчі події</h2>

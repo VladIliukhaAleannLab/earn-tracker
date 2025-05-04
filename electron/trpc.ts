@@ -4,6 +4,7 @@ import { z } from 'zod';
 // Використовуємо JSON.stringify/parse замість superjson
 import { getDatabase } from './database';
 import { sql } from 'kysely';
+import { DateTime } from 'luxon';
 
 // Створення контексту tRPC
 const createContext = () => ({
@@ -57,6 +58,8 @@ const taxSettingSchema = z.object({
     },
     z.number().min(0).max(1)
   ), // Transform various inputs to 0/1 for SQLite
+  year: z.number(),
+  quarter: z.number().min(1).max(4),
   user_id: z.number(),
 });
 
@@ -233,6 +236,56 @@ const appRouter = router({
 
   // Налаштування податків
   taxSettings: router({
+    // Копіювання податкових налаштувань з одного кварталу в інший
+    copyFromQuarter: publicProcedure
+      .input(z.object({
+        user_id: z.number(),
+        source_year: z.number(),
+        source_quarter: z.number().min(1).max(4),
+        target_year: z.number(),
+        target_quarter: z.number().min(1).max(4),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Отримуємо налаштування з вихідного кварталу
+        const sourceTaxSettings = await ctx.db
+          .selectFrom('tax_settings')
+          .where('user_id', '==', input.user_id)
+          .where('year', '==', input.source_year)
+          .where('quarter', '==', input.source_quarter)
+          .selectAll()
+          .execute();
+
+        // Видаляємо існуючі налаштування в цільовому кварталі
+        await ctx.db
+          .deleteFrom('tax_settings')
+          .where('user_id', '==', input.user_id)
+          .where('year', '==', input.target_year)
+          .where('quarter', '==', input.target_quarter)
+          .execute();
+
+        // Копіюємо налаштування в цільовий квартал
+        if (sourceTaxSettings.length > 0) {
+          const newTaxSettings = sourceTaxSettings.map(tax => ({
+            user_id: input.user_id,
+            name: tax.name,
+            type: tax.type,
+            value: tax.value,
+            active: tax.active,
+            year: input.target_year,
+            quarter: input.target_quarter,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }));
+
+          await ctx.db
+            .insertInto('tax_settings')
+            .values(newTaxSettings)
+            .execute();
+        }
+
+        return { success: true, count: sourceTaxSettings.length };
+      }),
+
     create: publicProcedure
       .input(taxSettingSchema)
       .mutation(async ({ input, ctx }) => {
@@ -245,23 +298,37 @@ const appRouter = router({
             type: input.type,
             value: input.value,
             active: input.active, // Already transformed by Zod schema
+            year: input.year,
+            quarter: input.quarter,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
-          .returning(['id', 'name', 'type', 'value'])
+          .returning(['id', 'name', 'type', 'value', 'year', 'quarter'])
           .executeTakeFirst();
 
         return result;
       }),
 
     getByUser: publicProcedure
-      .input(z.object({ user_id: z.number() }))
+      .input(z.object({
+        user_id: z.number(),
+        year: z.number().optional(),
+        quarter: z.number().min(1).max(4).optional()
+      }))
       .query(async ({ input, ctx }) => {
-        return ctx.db
+        let query = ctx.db
           .selectFrom('tax_settings')
-          .where('user_id', '==', input.user_id)
-          .selectAll()
-          .execute();
+          .where('user_id', '==', input.user_id);
+
+        if (input.year !== undefined) {
+          query = query.where('year', '==', input.year);
+        }
+
+        if (input.quarter !== undefined) {
+          query = query.where('quarter', '==', input.quarter);
+        }
+
+        return query.selectAll().execute();
       }),
 
     update: publicProcedure
@@ -399,13 +466,37 @@ const appRouter = router({
           ])
           .execute();
 
-        // Отримуємо активні налаштування податків
-        const taxSettings = await ctx.db
+        // Отримуємо активні налаштування податків для вказаного періоду
+        // Визначаємо рік і квартал з дат за допомогою Luxon
+        const startDate = DateTime.fromISO(input.start_date);
+
+        // Використовуємо властивість quarter з Luxon для точного визначення кварталу
+        const year = startDate.year;
+        const quarter = Math.ceil(startDate.month / 3);
+
+        console.log(`Calculating taxes for year: ${year}, quarter: ${quarter}, start_date: ${input.start_date}, end_date: ${input.end_date}`);
+
+        // Отримуємо всі активні податки для користувача
+        const allTaxSettings = await ctx.db
           .selectFrom('tax_settings')
           .where('user_id', '==', input.user_id)
           .where('active', '==', 1) // Using 1 instead of true for SQLite compatibility
-          .select(['name', 'type', 'value'])
+          .selectAll()
           .execute();
+
+        console.log('All tax settings:', allTaxSettings);
+
+        // Фільтруємо податки за роком і кварталом, якщо ці поля існують
+        let taxSettings = allTaxSettings;
+
+        // Перевіряємо, чи є в податках поля year і quarter
+        const hasYearQuarter = allTaxSettings.length > 0 && 'year' in allTaxSettings[0] && 'quarter' in allTaxSettings[0];
+
+        if (hasYearQuarter) {
+          console.log('Filtering tax settings by year and quarter');
+          taxSettings = allTaxSettings.filter(tax => tax.year === year && tax.quarter === quarter);
+          console.log('Filtered tax settings:', taxSettings);
+        }
 
         // Розрахунок загального доходу
         const totalIncome = incomes.reduce((sum, income) => {

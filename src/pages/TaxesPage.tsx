@@ -2,12 +2,15 @@ import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../contexts/AuthContext';
 import { trpc } from '../utils/trpc';
+import { DateTime } from 'luxon';
 
 interface TaxSettingForm {
   name: string;
   type: 'fixed' | 'percentage';
   value: number;
   active: boolean;
+  year: number;
+  quarter: number;
 }
 
 const TaxesPage: React.FC = () => {
@@ -22,11 +25,36 @@ const TaxesPage: React.FC = () => {
     },
   });
 
-  // Отримання податкових налаштувань користувача
-  const { data: taxSettings, isLoading, refetch } = trpc.taxSettings.getByUser.useQuery(
-    { user_id: user?.id || 0 },
-    { enabled: !!user }
+  // Отримання поточної дати
+  const currentDate = new Date();
+  const [year, setYear] = useState<number>(currentDate.getFullYear());
+  const [quarter, setQuarter] = useState<number>(Math.floor(currentDate.getMonth() / 3) + 1);
+
+  // Отримання податкових налаштувань користувача для вибраного кварталу
+  const { data: taxSettings, isLoading, refetch, error } = trpc.taxSettings.getByUser.useQuery(
+    { user_id: user?.id || 0, year, quarter },
+    {
+      enabled: !!user,
+      // Якщо виникла помилка з колонками year/quarter, спробуємо запит без них
+      retry: false,
+      onError: (err) => {
+        console.error('Error fetching tax settings:', err);
+      }
+    }
   );
+
+  // Запасний запит без фільтрів по року і кварталу, якщо перший запит не вдався
+  const { data: fallbackTaxSettings, isLoading: isFallbackLoading } = trpc.taxSettings.getByUser.useQuery(
+    { user_id: user?.id || 0 },
+    {
+      enabled: !!user && !!error,
+      retry: false
+    }
+  );
+
+  // Використовуємо запасні дані, якщо основний запит не вдався
+  const effectiveTaxSettings = error ? fallbackTaxSettings : taxSettings;
+  const isEffectiveLoading = error ? isFallbackLoading : isLoading;
 
   // Мутації для операцій з податковими налаштуваннями
   const createTaxSetting = trpc.taxSettings.create.useMutation({
@@ -41,6 +69,10 @@ const TaxesPage: React.FC = () => {
     onSuccess: () => refetch(),
   });
 
+  const copyTaxSettings = trpc.taxSettings.copyFromQuarter.useMutation({
+    onSuccess: () => refetch(),
+  });
+
   // Обробка відправки форми
   const onSubmit = async (data: TaxSettingForm) => {
     if (!user) return;
@@ -52,12 +84,16 @@ const TaxesPage: React.FC = () => {
           id: editingTaxId,
           ...data,
           user_id: user.id,
+          year: data.year || year,
+          quarter: data.quarter || quarter,
         });
       } else {
         // Створення нового податкового налаштування
         await createTaxSetting.mutateAsync({
           ...data,
           user_id: user.id,
+          year,
+          quarter,
         });
       }
 
@@ -80,6 +116,8 @@ const TaxesPage: React.FC = () => {
     setValue('type', taxSetting.type);
     setValue('value', taxSetting.value);
     setValue('active', taxSetting.active === 1); // Convert 0/1 to boolean for form
+    setValue('year', taxSetting.year || year);
+    setValue('quarter', taxSetting.quarter || quarter);
   };
 
   // Функція для видалення податкового налаштування
@@ -100,18 +138,24 @@ const TaxesPage: React.FC = () => {
     reset();
   };
 
-  // Отримання поточної дати
-  const currentDate = new Date();
-  const [year, setYear] = useState<number>(currentDate.getFullYear());
-  const [quarter, setQuarter] = useState<number>(Math.floor(currentDate.getMonth() / 3) + 1);
 
-  // Розрахунок початку і кінця вибраного кварталу
+
+  // Розрахунок початку і кінця вибраного кварталу з використанням Luxon
   const { startOfQuarter, endOfQuarter } = useMemo(() => {
-    const start = new Date(year, (quarter - 1) * 3, 1);
-    const end = new Date(year, quarter * 3, 0);
+    // Створюємо об'єкт DateTime для першого дня кварталу
+    // Використовуємо місяці 1, 4, 7, 10 для кварталів 1, 2, 3, 4
+    const firstMonthOfQuarter = (quarter - 1) * 3 + 1;
+    const start = DateTime.local(year, firstMonthOfQuarter, 1).startOf('day');
+
+    // Створюємо об'єкт DateTime для останнього дня кварталу
+    // Використовуємо метод endOf('quarter') для точного визначення кінця кварталу
+    const end = start.endOf('quarter');
+
+    console.log(`Quarter ${quarter} of ${year}: ${start.toISODate()} to ${end.toISODate()}`);
+
     return {
-      startOfQuarter: start,
-      endOfQuarter: end
+      startOfQuarter: start.toJSDate(),
+      endOfQuarter: end.toJSDate()
     };
   }, [year, quarter]);
 
@@ -129,13 +173,21 @@ const TaxesPage: React.FC = () => {
   const { data: quarterlyTaxes } = trpc.analytics.calculateTaxes.useQuery(
     {
       user_id: user?.id || 0,
-      start_date: startOfQuarter.toISOString().split('T')[0],
-      end_date: endOfQuarter.toISOString().split('T')[0],
+      // Використовуємо форматування дат з Luxon для гарантії правильного формату
+      start_date: DateTime.fromJSDate(startOfQuarter).toISODate() || '',
+      end_date: DateTime.fromJSDate(endOfQuarter).toISODate() || '',
     },
-    { enabled: !!user }
+    {
+      enabled: !!user,
+      // Додаємо логування для відстеження дат
+      onSuccess: (data) => {
+        console.log(`Got tax data for period: ${DateTime.fromJSDate(startOfQuarter).toISODate()} to ${DateTime.fromJSDate(endOfQuarter).toISODate()}`);
+        console.log('Tax data:', data);
+      }
+    }
   );
 
-  if (isLoading) {
+  if (isEffectiveLoading) {
     return <div>Завантаження...</div>;
   }
 
@@ -330,9 +382,56 @@ const TaxesPage: React.FC = () => {
 
       {/* Таблиця податкових налаштувань */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <h2 className="text-xl font-semibold p-6 border-b">Налаштування податків</h2>
+        <div className="flex justify-between items-center p-6 border-b">
+          <h2 className="text-xl font-semibold">Налаштування податків за {quarter} квартал {year} року</h2>
 
-        {taxSettings && taxSettings.length > 0 ? (
+          <div className="flex space-x-2">
+            {!error && (
+              <select
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                onChange={(e) => {
+                  const [sourceYear, sourceQuarter] = e.target.value.split('-').map(Number);
+                  if (sourceYear && sourceQuarter) {
+                    if (confirm(`Ви впевнені, що хочете скопіювати податки з ${sourceQuarter} кварталу ${sourceYear} року в ${quarter} квартал ${year} року?`)) {
+                      copyTaxSettings.mutate({
+                        user_id: user?.id || 0,
+                        source_year: sourceYear,
+                        source_quarter: sourceQuarter,
+                        target_year: year,
+                        target_quarter: quarter,
+                      });
+                    }
+                  }
+                }}
+                defaultValue=""
+              >
+                <option value="" disabled>Скопіювати податки з...</option>
+                {Array.from({ length: 5 }, (_, yearOffset) => {
+                  const yearValue = new Date().getFullYear() - yearOffset;
+                  return Array.from({ length: 4 }, (_, q) => {
+                    const quarterValue = q + 1;
+                    // Не показуємо поточний квартал
+                    if (yearValue === year && quarterValue === quarter) {
+                      return null;
+                    }
+                    return (
+                      <option key={`${yearValue}-${quarterValue}`} value={`${yearValue}-${quarterValue}`}>
+                        {quarterValue} квартал {yearValue} року
+                      </option>
+                    );
+                  }).filter(Boolean);
+                }).flat()}
+              </select>
+            )}
+            {error && (
+              <div className="text-sm text-orange-500">
+                Функція копіювання недоступна. Потрібно оновити базу даних.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {effectiveTaxSettings && effectiveTaxSettings.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -355,7 +454,7 @@ const TaxesPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {taxSettings.map((taxSetting) => (
+                {effectiveTaxSettings.map((taxSetting) => (
                   <tr key={taxSetting.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {taxSetting.name}

@@ -3,6 +3,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { app } from 'electron';
 import fs from 'fs';
+import { runMigrations } from './migrations';
 
 // Типи для бази даних
 export interface UserTable {
@@ -32,6 +33,8 @@ export interface TaxSettingTable {
   type: 'fixed' | 'percentage';
   value: number;
   active: number; // 0 = false, 1 = true for SQLite compatibility
+  year: number;
+  quarter: number;
   created_at: string;
   updated_at: string;
 }
@@ -106,6 +109,8 @@ async function createTables(db: Kysely<Database>) {
     .addColumn('type', 'text', (col) => col.notNull())
     .addColumn('value', 'real', (col) => col.notNull())
     .addColumn('active', 'boolean', (col) => col.notNull().defaultTo(true))
+    .addColumn('year', 'integer', (col) => col.notNull().defaultTo(new Date().getFullYear()))
+    .addColumn('quarter', 'integer', (col) => col.notNull().defaultTo(Math.floor(new Date().getMonth() / 3) + 1))
     .addColumn('created_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
     .addColumn('updated_at', 'text', (col) => col.notNull().defaultTo(new Date().toISOString()))
     .execute();
@@ -166,6 +171,16 @@ export async function setupDatabase() {
 
     // Створення таблиць
     await createTables(db);
+
+    // Запускаємо міграції
+    try {
+      await runMigrations(db);
+      console.log('Migrations completed successfully');
+    } catch (migrationError) {
+      console.error('Error running migrations:', migrationError);
+      // Продовжуємо роботу навіть якщо міграції не вдалися
+    }
+
     console.log('Database setup completed successfully');
 
     return db;
